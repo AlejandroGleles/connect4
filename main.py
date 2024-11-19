@@ -1,132 +1,267 @@
 import numpy as np
+import random
+import pygame
+import sys
+import math
 import time
 
-# Dimensões do tabuleiro
-ROWS = 6
-COLUMNS = 7
+# Cores
+AZUL = (0, 0, 255)
+PRETO = (0, 0, 0)
+VERMELHO = (255, 0, 0)
+AMARELO = (255, 255, 0)
+
+# Configurações do Tabuleiro
+LINHAS = 7
+COLUNAS = 8
+TAMANHO_JANELA = 4  # Mudando para 4, já que estamos buscando vitórias de 4 peças consecutivas
+
+# Identificadores do jogador e IA
+JOGADOR = 0
+IA = 1
+VAZIO = 0
+PECA_JOGADOR = 1
+PECA_IA = 2
+
+# Variáveis globais para contar os nós expandidos
+nós_expandidos = 0
 
 def criar_tabuleiro():
-    return np.zeros((ROWS, COLUMNS), dtype=int)
+    """Cria um tabuleiro vazio de 7x8 (linhas x colunas)"""
+    return np.zeros((LINHAS, COLUNAS))
 
-def imprimir_tabuleiro(tabuleiro):
-    print(np.flip(tabuleiro, 0))
+def colocar_peca(tabuleiro, linha, coluna, peca):
+    """Coloca uma peça no tabuleiro na posição especificada"""
+    tabuleiro[linha][coluna] = peca
 
-def jogada_valida(tabuleiro, coluna):
-    return tabuleiro[ROWS - 1][coluna] == 0
+def localização_valida(tabuleiro, coluna):
+    """Verifica se a coluna está cheia ou não"""
+    return tabuleiro[LINHAS-1][coluna] == 0
 
-def obter_linha_vazia(tabuleiro, coluna):
-    for r in range(ROWS):
+def próxima_linha_aberta(tabuleiro, coluna):
+    """Retorna a próxima linha disponível para uma peça na coluna especificada"""
+    for r in range(LINHAS):
         if tabuleiro[r][coluna] == 0:
             return r
 
-def fazer_jogada(tabuleiro, linha, coluna, peca):
-    tabuleiro[linha][coluna] = peca
-
-def verificar_vitoria(tabuleiro, peca):
-    # Checar vitória horizontal
-    for r in range(ROWS):
-        for c in range(COLUMNS - 3):
-            if all([tabuleiro[r][c + i] == peca for i in range(4)]):
+def movimento_vencedor(tabuleiro, peca):
+    """Verifica se houve uma vitória com a peça fornecida (IA ou jogador)"""
+    # Verifica linhas, colunas e diagonais para uma vitória
+    for c in range(COLUNAS-3):
+        for r in range(LINHAS):
+            if all(tabuleiro[r][c+i] == peca for i in range(4)):
                 return True
-    # Checar vitória vertical
-    for r in range(ROWS - 3):
-        for c in range(COLUMNS):
-            if all([tabuleiro[r + i][c] == peca for i in range(4)]):
+    for c in range(COLUNAS):
+        for r in range(LINHAS-3):
+            if all(tabuleiro[r+i][c] == peca for i in range(4)):
                 return True
-    # Checar vitória diagonal positiva
-    for r in range(ROWS - 3):
-        for c in range(COLUMNS - 3):
-            if all([tabuleiro[r + i][c + i] == peca for i in range(4)]):
+    for c in range(COLUNAS-3):
+        for r in range(LINHAS-3):
+            if all(tabuleiro[r+i][c+i] == peca for i in range(4)):
                 return True
-    # Checar vitória diagonal negativa
-    for r in range(3, ROWS):
-        for c in range(COLUMNS - 3):
-            if all([tabuleiro[r - i][c + i] == peca for i in range(4)]):
+    for c in range(COLUNAS-3):
+        for r in range(3, LINHAS):
+            if all(tabuleiro[r-i][c+i] == peca for i in range(4)):
                 return True
     return False
 
-def avaliacao(tabuleiro, peca):
-    # Função de avaliação simples para o estado atual
-    oponente = 1 if peca == 2 else 2
-    if verificar_vitoria(tabuleiro, peca):
-        return 100
-    elif verificar_vitoria(tabuleiro, oponente):
-        return -100
-    else:
-        return 0
+def avaliar_janela(janela, peca):
+    """Avalia uma janela de 4 posições e retorna um score com base na posição"""
+    score = 0
+    peca_oponente = PECA_JOGADOR if peca == PECA_IA else PECA_IA
 
-def movimentos_validos(tabuleiro):
-    return [c for c in range(COLUMNS) if jogada_valida(tabuleiro, c)]
+    # Vantagens para a IA
+    if janela.count(peca) == 4:
+        score += 100  # Vitória da IA
+    elif janela.count(peca) == 3 and janela.count(VAZIO) == 1:
+        score += 10  # A IA pode ganhar na próxima jogada
+    elif janela.count(peca) == 2 and janela.count(VAZIO) == 2:
+        score += 5  # A IA está perto de ganhar
 
-def minimax(tabuleiro, profundidade, maximizando, peca, alfa=-np.inf, beta=np.inf):
-    movimentos = movimentos_validos(tabuleiro)
-    if profundidade == 0 or not movimentos or verificar_vitoria(tabuleiro, 1) or verificar_vitoria(tabuleiro, 2):
-        return avaliacao(tabuleiro, peca), None
+    # Desvantagens para o Jogador (prevenir vitória)
+    if janela.count(peca_oponente) == 3 and janela.count(VAZIO) == 1:
+        score -= 50  # Impede que o jogador ganhe
+    elif janela.count(peca_oponente) == 2 and janela.count(VAZIO) == 2:
+        score -= 10  # Prevenção de um possível alinhamento do jogador
+    
+    return score
 
-    if maximizando:
-        valor_max = -np.inf
-        melhor_coluna = None
-        for col in movimentos:
-            linha = obter_linha_vazia(tabuleiro, col)
-            copia = tabuleiro.copy()
-            fazer_jogada(copia, linha, col, peca)
-            nova_avaliacao, _ = minimax(copia, profundidade - 1, False, peca, alfa, beta)
-            if nova_avaliacao > valor_max:
-                valor_max = nova_avaliacao
-                melhor_coluna = col
-            alfa = max(alfa, valor_max)
-            if alfa >= beta:
-                break
-        return valor_max, melhor_coluna
-    else:
-        valor_min = np.inf
-        melhor_coluna = None
-        oponente = 1 if peca == 2 else 2
-        for col in movimentos:
-            linha = obter_linha_vazia(tabuleiro, col)
-            copia = tabuleiro.copy()
-            fazer_jogada(copia, linha, col, oponente)
-            nova_avaliacao, _ = minimax(copia, profundidade - 1, True, peca, alfa, beta)
-            if nova_avaliacao < valor_min:
-                valor_min = nova_avaliacao
-                melhor_coluna = col
-            beta = min(beta, valor_min)
-            if alfa >= beta:
-                break
-        return valor_min, melhor_coluna
+def pontuar_posição(tabuleiro, peca):
+    """Calcula o score global do tabuleiro para uma peça"""
+    score = 0
+    centro_array = [int(i) for i in list(tabuleiro[:, COLUNAS//2])]
+    centro_count = centro_array.count(peca)
+    score += centro_count * 3  # A centralidade das peças é mais importante
 
-# Jogo
-def main():
-    tabuleiro = criar_tabuleiro()
-    fim = False
-    turno = 0
+    # Análise das linhas, colunas e diagonais
+    for r in range(LINHAS):
+        linha_array = [int(i) for i in list(tabuleiro[r, :])]
+        for c in range(COLUNAS-3):
+            janela = linha_array[c:c+TAMANHO_JANELA]
+            score += avaliar_janela(janela, peca)
 
-    while not fim:
-        imprimir_tabuleiro(tabuleiro)
-        if turno == 0:
-            col = int(input("Jogador 1, escolha uma coluna (0-6): "))
-            if jogada_valida(tabuleiro, col):
-                linha = obter_linha_vazia(tabuleiro, col)
-                fazer_jogada(tabuleiro, linha, col, 1)
-                if verificar_vitoria(tabuleiro, 1):
-                    imprimir_tabuleiro(tabuleiro)
-                    print("Jogador 1 venceu!")
-                    fim = True
+    for c in range(COLUNAS):
+        coluna_array = [int(i) for i in list(tabuleiro[:, c])]
+        for r in range(LINHAS-3):
+            janela = coluna_array[r:r+TAMANHO_JANELA]
+            score += avaliar_janela(janela, peca)
+
+    for r in range(LINHAS-3):
+        for c in range(COLUNAS-3):
+            janela = [tabuleiro[r+i][c+i] for i in range(TAMANHO_JANELA)]
+            score += avaliar_janela(janela, peca)
+    for r in range(LINHAS-3):
+        for c in range(COLUNAS-3):
+            janela = [tabuleiro[r+3-i][c+i] for i in range(TAMANHO_JANELA)]
+            score += avaliar_janela(janela, peca)
+    
+    return score
+
+def é_nó_terminal(tabuleiro):
+    """Verifica se o jogo acabou (vitória ou empate)"""
+    return movimento_vencedor(tabuleiro, PECA_JOGADOR) or movimento_vencedor(tabuleiro, PECA_IA) or len(obter_localizações_validas(tabuleiro)) == 0
+
+def minimax(tabuleiro, profundidade, alpha, beta, jogador_maximizador):
+    """Algoritmo Minimax com poda Alfa-Beta"""
+    global nós_expandidos
+    nós_expandidos += 1
+    localizações_validas = obter_localizações_validas(tabuleiro)
+    é_terminal = é_nó_terminal(tabuleiro)
+    
+    if profundidade == 0 or é_terminal:
+        if é_terminal:
+            if movimento_vencedor(tabuleiro, PECA_IA):
+                return (None, 100000000000000)
+            elif movimento_vencedor(tabuleiro, PECA_JOGADOR):
+                return (None, -10000000000000)
+            else:
+                return (None, 0)
         else:
-            _, col = minimax(tabuleiro, profundidade=3, maximizando=True, peca=2)
-            if jogada_valida(tabuleiro, col):
-                linha = obter_linha_vazia(tabuleiro, col)
-                fazer_jogada(tabuleiro, linha, col, 2)
-                if verificar_vitoria(tabuleiro, 2):
-                    imprimir_tabuleiro(tabuleiro)
-                    print("Jogador 2 venceu!")
-                    fim = True
-        turno += 1
-        turno %= 2
+            return (None, pontuar_posição(tabuleiro, PECA_IA))
 
-        if not movimentos_validos(tabuleiro):
-            print("Empate!")
-            fim = True
+    if jogador_maximizador:
+        valor = -math.inf
+        coluna = random.choice(localizações_validas)
+        for col in localizações_validas:
+            linha = próxima_linha_aberta(tabuleiro, col)
+            tabuleiro_copia = tabuleiro.copy()
+            colocar_peca(tabuleiro_copia, linha, col, PECA_IA)
+            novo_score = minimax(tabuleiro_copia, profundidade-1, alpha, beta, False)[1]
+            if novo_score > valor:
+                valor = novo_score
+                coluna = col
+            alpha = max(alpha, valor)
+            if alpha >= beta:
+                break
+        return coluna, valor
+    else:
+        valor = math.inf
+        coluna = random.choice(localizações_validas)
+        for col in localizações_validas:
+            linha = próxima_linha_aberta(tabuleiro, col)
+            tabuleiro_copia = tabuleiro.copy()
+            colocar_peca(tabuleiro_copia, linha, col, PECA_JOGADOR)
+            novo_score = minimax(tabuleiro_copia, profundidade-1, alpha, beta, True)[1]
+            if novo_score < valor:
+                valor = novo_score
+                coluna = col
+            beta = min(beta, valor)
+            if alpha >= beta:
+                break
+        return coluna, valor
+
+def obter_localizações_validas(tabuleiro):
+    """Retorna uma lista com as colunas válidas onde a peça pode ser colocada"""
+    return [col for col in range(COLUNAS) if localização_valida(tabuleiro, col)]
+
+def desenhar_tabuleiro(tabuleiro, tela, TAMANHO_QUADRADO, RAIO, altura):
+    """Desenha o tabuleiro na tela usando Pygame"""
+    for c in range(COLUNAS):
+        for r in range(LINHAS):
+            pygame.draw.rect(tela, AZUL, (c*TAMANHO_QUADRADO, r*TAMANHO_QUADRADO+TAMANHO_QUADRADO, TAMANHO_QUADRADO, TAMANHO_QUADRADO))
+            pygame.draw.circle(tela, PRETO, (int(c*TAMANHO_QUADRADO+TAMANHO_QUADRADO/2), int(r*TAMANHO_QUADRADO+TAMANHO_QUADRADO+TAMANHO_QUADRADO/2)), RAIO)
+
+    for c in range(COLUNAS):
+        for r in range(LINHAS):
+            if tabuleiro[r][c] == PECA_JOGADOR:
+                pygame.draw.circle(tela, VERMELHO, (int(c*TAMANHO_QUADRADO+TAMANHO_QUADRADO/2), altura-int(r*TAMANHO_QUADRADO+TAMANHO_QUADRADO/2)), RAIO)
+            elif tabuleiro[r][c] == PECA_IA:
+                pygame.draw.circle(tela, AMARELO, (int(c*TAMANHO_QUADRADO+TAMANHO_QUADRADO/2), altura-int(r*TAMANHO_QUADRADO+TAMANHO_QUADRADO/2)), RAIO)
+    pygame.display.update()
+
+def imprimir_mensagem_fim_de_jogo(vencedor, tempo_ia):
+    """Imprime a mensagem de fim de jogo no terminal"""
+    if vencedor == JOGADOR:
+        print("O Jogador 1 venceu!!")
+    elif vencedor == IA:
+        print("A IA venceu!!")
+    else:
+        print("Empate!")
+    print(f"Tempo gasto pela IA: {tempo_ia} segundos")
+    print(f"Nós expandidos: {nós_expandidos}")
+
+def principal():
+    tabuleiro = criar_tabuleiro()
+    jogo_acabado = False
+    profundidade = int(input("Escolha a profundidade (número de níveis desejados): "))
+    algoritmo = input("Escolha o algoritmo (minimax / alpha_beta): ").lower()
+    pygame.init()
+
+    TAMANHO_QUADRADO = 90
+    largura = COLUNAS * TAMANHO_QUADRADO
+    altura = (LINHAS + 1) * TAMANHO_QUADRADO
+    tamanho = (largura, altura)
+    tela = pygame.display.set_mode(tamanho)
+
+    RAIO = int(TAMANHO_QUADRADO/2 - 5)
+    distancia = 50
+    font = pygame.font.SysFont("monospace", 75)
+
+    # Exibe o tabuleiro vazio inicialmente
+    desenhar_tabuleiro(tabuleiro, tela, TAMANHO_QUADRADO, RAIO, altura)
+
+    # Decide aleatoriamente quem começa
+    quem_comeca = random.choice([JOGADOR, IA])
+
+    while not jogo_acabado:
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if evento.type == pygame.MOUSEMOTION:
+                pass
+            if evento.type == pygame.MOUSEBUTTONDOWN:
+                if evento.button == 1:  # Botão esquerdo do mouse
+                    x_pos = evento.pos[0]
+                    coluna = x_pos // TAMANHO_QUADRADO
+                    if localização_valida(tabuleiro, coluna):
+                        linha = próxima_linha_aberta(tabuleiro, coluna)
+                        colocar_peca(tabuleiro, linha, coluna, PECA_JOGADOR)
+                        desenhar_tabuleiro(tabuleiro, tela, TAMANHO_QUADRADO, RAIO, altura)
+
+                        if movimento_vencedor(tabuleiro, PECA_JOGADOR):
+                            jogo_acabado = True
+                            vencedor = JOGADOR
+                            imprimir_mensagem_fim_de_jogo(vencedor, 3.0)
+                            break
+
+                        # IA faz sua jogada
+                        print("A IA está pensando...")
+                        time.sleep(1)  # Delay de 1 segundo para a IA pensar
+
+                        coluna_ia, _ = minimax(tabuleiro, profundidade, -math.inf, math.inf, True)
+                        linha_ia = próxima_linha_aberta(tabuleiro, coluna_ia)
+                        colocar_peca(tabuleiro, linha_ia, coluna_ia, PECA_IA)
+                        desenhar_tabuleiro(tabuleiro, tela, TAMANHO_QUADRADO, RAIO, altura)
+
+                        if movimento_vencedor(tabuleiro, PECA_IA):
+                            jogo_acabado = True
+                            vencedor = IA
+                            imprimir_mensagem_fim_de_jogo(vencedor, 3.0)
+                            break
+
+        pygame.display.update()
 
 if __name__ == "__main__":
-    main()
+    principal()
