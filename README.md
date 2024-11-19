@@ -1,78 +1,94 @@
-Guia de Instalação e Execução
-Este projeto é um jogo Connect 4 implementado em Python, onde um jogador enfrenta uma IA utilizando o algoritmo Minimax com poda alfa-beta. A IA é capaz de jogar de forma competitiva contra o jogador humano. O jogo usa a biblioteca Pygame para a interface gráfica.
+Connect 4 - Jogo com Inteligência Artificial (Minimax)
+Este é um projeto de Connect 4 (ou Quatro em Linha) implementado em Python. O jogo permite que um jogador humano enfrente uma IA que utiliza o algoritmo Minimax com poda alfa-beta para calcular as melhores jogadas possíveis.
 
-Aqui está um guia para rodar o jogo no seu computador, além de uma breve explicação sobre o código.
-
-1. Pré-Requisitos
-Python 3.11 ou superior: Certifique-se de ter o Python instalado. Caso não tenha, você pode baixá-lo de python.org.
-
-Bibliotecas necessárias: O projeto utiliza as bibliotecas numpy e pygame.
-
-2. Instalação
-Passo 1: Clonar o Repositório
-Caso ainda não tenha o código, você pode cloná-lo utilizando Git. Se você não tiver o Git instalado, pode baixá-lo aqui.
-
-bash
-Copiar código
-git clone https://github.com/seu_usuario/connect4-main.git
-cd connect4-main
-Passo 2: Criar e Ativar um Ambiente Virtual (opcional, mas recomendado)
-Se preferir, crie um ambiente virtual para instalar as dependências isoladas:
+Tabela de Conteúdos
+Instalação
+Como Jogar
+Estrutura do Código
+Heurísticas da IA
+Como Rodar o Jogo
+Licença
+Instalação
+Clonando o Repositório
+Clone o repositório para o seu computador utilizando Git:
 
 bash
 Copiar código
-python -m venv env
-# No Windows
-.\env\Scripts\activate
-# No Linux/Mac
-source env/bin/activate
-Passo 3: Instalar as Dependências
-Agora, instale as bibliotecas necessárias para o projeto:
+git clone https://github.com/AlejandroGleles/connect4.git
+cd connect4
+Instalando Dependências
+Este projeto requer o Python 3 e as bibliotecas numpy e pygame. Se você não tem o Python instalado, faça o download aqui.
+
+Crie e ative um ambiente virtual (opcional, mas recomendado):
+
+bash
+Copiar código
+# Criando o ambiente virtual
+python -m venv venv
+
+# No Windows:
+.\venv\Scripts\activate
+
+# No Linux/Mac:
+source venv/bin/activate
+Em seguida, instale as dependências:
+
+bash
+Copiar código
+pip install -r requirements.txt
+Ou instale manualmente numpy e pygame:
 
 bash
 Copiar código
 pip install numpy pygame
-3. Execução do Jogo
-Depois de instalar as dependências, você pode rodar o jogo com o seguinte comando:
+Como Jogar
+Iniciar o Jogo: Execute o arquivo main.py:
 
 bash
 Copiar código
 python main.py
-Isso iniciará a interface gráfica do Connect 4.
+Objetivo: O objetivo do jogo é ser o primeiro a alinhar 4 peças consecutivas, seja horizontal, vertical ou diagonalmente.
 
-4. Como Jogar
-Jogador: Clique nas colunas para adicionar uma peça vermelha.
-IA: A IA jogará automaticamente após o jogador realizar sua jogada. O tempo que a IA leva para decidir o movimento depende da profundidade do algoritmo Minimax escolhida.
-5. Estrutura do Código
-O código está dividido em várias funções responsáveis por diferentes partes do jogo, desde a criação do tabuleiro até a verificação de vitórias e a execução do algoritmo Minimax.
+Jogador: O jogador humano pode fazer movimentos clicando nas colunas, colocando uma peça vermelha.
 
-Principais Funções
-criar_tabuleiro(): Cria o tabuleiro vazio com dimensões 7x8.
-colocar_peca(): Coloca uma peça no tabuleiro nas coordenadas fornecidas.
-movimento_vencedor(): Verifica se houve uma vitória após um movimento.
-minimax(): O algoritmo Minimax, que permite que a IA jogue de maneira inteligente, usando poda alfa-beta para otimizar a busca por movimentos.
-desenhar_tabuleiro(): Desenha o tabuleiro e as peças na tela usando a biblioteca Pygame.
-principal(): Função principal que gerencia o loop do jogo.
-Heurísticas do Algoritmo Minimax
-O algoritmo Minimax avalia os movimentos possíveis com base nas heurísticas, tentando maximizar a vantagem da IA e minimizar a possibilidade de vitória do jogador. Algumas das heurísticas implementadas são:
+IA: A IA (inteligência artificial) jogará automaticamente após o jogador fazer seu movimento. O algoritmo Minimax decide a melhor jogada com base em uma série de heurísticas.
 
-Vantagem para a IA:
-Se a IA tiver 4 peças consecutivas (vitória), ela ganha.
-Se a IA estiver a uma jogada de ganhar, ela recebe uma pontuação alta.
-Se a IA estiver próxima de ganhar, ela recebe uma pontuação menor, mas ainda significativa.
-Desvantagens para o Jogador:
-Se o jogador estiver a uma jogada de ganhar, a IA tenta bloquear esse movimento.
-Posições Centrais: O centro do tabuleiro tem maior peso nas decisões, pois ocupar as colunas centrais oferece mais opções de movimentos.
-6. Outros Detalhes
-Jogador vs IA: O jogador sempre joga primeiro, mas a IA pode ser configurada para iniciar caso deseje.
-Profundidade do Algoritmo: O jogador pode escolher a profundidade da busca Minimax, que afeta a "dificuldade" da IA. Quanto maior a profundidade, mais tempo a IA pode levar para calcular sua jogada, mas suas decisões se tornam mais precisas.
-7. Possíveis Erros Comuns
-Erro de Módulo Não Encontrado: Se você encontrar um erro como ModuleNotFoundError, significa que a biblioteca necessária não foi instalada. Para isso, use:
+Estrutura do Código
+O código é dividido em várias funções que gerenciam diferentes aspectos do jogo. A seguir estão as principais funções:
+
+Funções Principais
+criar_tabuleiro(): Cria e retorna um tabuleiro vazio (matriz 7x8) usando numpy.
+colocar_peca(): Coloca uma peça (do jogador ou da IA) no tabuleiro.
+movimento_vencedor(): Verifica se o movimento atual resulta em uma vitória para o jogador ou IA.
+minimax(): Implementa o algoritmo Minimax com poda alfa-beta para otimizar a decisão da IA. Esse algoritmo avalia possíveis jogadas e escolhe a melhor, com base nas heurísticas definidas.
+desenhar_tabuleiro(): Responsável por desenhar o tabuleiro e as peças na tela usando a biblioteca Pygame.
+principal(): Função principal que gerencia o fluxo do jogo, incluindo a interação com o usuário e as jogadas da IA.
+Heurísticas da IA
+A IA utiliza heurísticas para avaliar as melhores jogadas possíveis durante o jogo. Essas heurísticas são baseadas em características do tabuleiro e visam maximizar a chance da IA vencer e minimizar as chances do jogador vencer. Abaixo estão as principais heurísticas utilizadas:
+
+1. Vantagens para a IA (maximizar a chance de vitória)
+4 peças consecutivas: Se a IA conseguir alinhar 4 peças consecutivas em qualquer direção (linha, coluna ou diagonal), a jogada é considerada uma vitória. Isso recebe uma pontuação alta.
+3 peças consecutivas + 1 espaço vazio: Se a IA já tiver 3 peças consecutivas e um espaço vazio em uma janela de 4 posições, ela recebe uma pontuação alta. Isso indica que a IA pode ganhar na próxima jogada.
+2 peças consecutivas + 2 espaços vazios: Se a IA tiver 2 peças consecutivas e 2 espaços vazios, ela recebe uma pontuação moderada. A IA está próxima de completar a sequência.
+2. Desvantagens para o Jogador (minimizar a chance de vitória)
+3 peças do jogador + 1 espaço vazio: Se o jogador tiver 3 peças consecutivas e um espaço vazio, a IA penaliza essa situação com uma pontuação negativa, porque o jogador pode ganhar na próxima jogada.
+2 peças do jogador + 2 espaços vazios: Se o jogador tiver 2 peças consecutivas e dois espaços vazios, isso também é uma situação perigosa. A IA penaliza essa configuração para evitar que o jogador complete a sequência.
+3. Posições Centrais (prioridade para a IA)
+A centralidade das peças: A IA valoriza mais as peças colocadas nas colunas centrais, pois elas oferecem mais possibilidades de movimentos nas próximas jogadas. Assim, a IA recebe uma pontuação adicional para cada peça colocada nas colunas centrais.
+4. Bloqueio de Jogadas Vencedoras
+Prevenção de vitória do jogador: Além de procurar suas próprias vitórias, a IA também precisa bloquear as vitórias do jogador. Se o jogador estiver a uma jogada de ganhar, a IA é incentivada a bloquear essa posição.
+5. Poda Alfa-Beta
+O algoritmo Minimax utiliza a poda alfa-beta para otimizar a busca. Ele pode "podar" (ou cortar) partes da árvore de decisões que não precisam ser exploradas, pois já encontramos uma solução melhor em outro ramo. Isso acelera significativamente o processo de decisão da IA, permitindo que ela jogue de forma eficiente.
+
+Como Rodar o Jogo
+Para rodar o jogo, basta executar o arquivo principal:
 
 bash
 Copiar código
-pip install numpy pygame
-Erro de Tela em Branco no Pygame: Se a interface gráfica não carregar corretamente, verifique se o Pygame está bem instalado e atualizado.
+python main.py
+O jogo pedirá para você escolher a profundidade da busca (quanto maior, mais difícil a IA) e o algoritmo que a IA deve usar (Minimax ou Alpha-Beta).
 
-Conclusão
-Esse é um projeto simples e divertido para aprender como implementar um jogo básico com IA, utilizando conceitos como Minimax e Poda Alfa-Beta. Com essas instruções, você deve conseguir configurar o ambiente e rodar o jogo sem problemas. Se precisar de mais ajuda, estou à disposição!
+Opções de Entrada:
+
+Profundidade: Escolha a profundidade da busca (maior profundidade torna a IA mais forte, mas também mais lenta).
+Algoritmo: Escolha entre minimax ou alpha_beta (para usar a poda alfa-beta).
